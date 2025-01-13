@@ -1,10 +1,11 @@
 package Service;
 
+// Our custom classes imported
 import DAO.MessageDAO;
 import Model.Message;
 
+// External Libraries
 import java.util.List;
-import java.util.ArrayList;
 
 public class MessageService {
 
@@ -38,7 +39,4 @@ public class MessageService {
     public Message deleteMessageByID(int message_id){
         return messageDao.deleteMessageByID(message_id);
     }
-
-    
-    
 }

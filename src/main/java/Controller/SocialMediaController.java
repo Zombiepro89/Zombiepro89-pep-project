@@ -14,9 +14,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * TODO: You will need to write your own endpoints and handlers for your controller. The endpoints you will need can be
- * found in readme.md as well as the test cases. You should
- * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
+ * Routes and handles any requests sent to the platform. Leverages the AccountService and MessageService 
+ * classes for accomplish its task.
  */
 public class SocialMediaController {
     AccountService accountService;
@@ -27,9 +26,9 @@ public class SocialMediaController {
         messageService = new MessageService();
     }
 
+    
     /**
-     * In order for the test cases to work, you will need to write the endpoints in the startAPI() method, as the test
-     * suite must receive a Javalin object from this method.
+     * Initializes the paths for the platform
      * @return a Javalin app object which defines the behavior of the Javalin controller.
      */
     public Javalin startAPI() {
@@ -50,6 +49,18 @@ public class SocialMediaController {
         return app;
     }
 
+
+    /**
+     * Attempts to register user using the information in the body of the request.
+     * Sends a HTTP 200 status code if this is done successfully
+     * Sends a HTTP 400 status code if the user details are invalid.
+     * 
+     * For an account to be valid, the username must be at least 1 character long
+     * and the password must be at least 4 characters long.
+     * 
+     * @param context The Javalin Context object that contains the account information
+     * @throws JsonProcessingException Thrown if body is not of expected format.
+     */
     private void registerUser(Context context) throws JsonProcessingException{
         // Extract account information from request body
         ObjectMapper objM = new ObjectMapper();
@@ -68,6 +79,16 @@ public class SocialMediaController {
         }
     }
 
+
+    /**
+     * Attempts to login the user given the account details in the body of the request.
+     * 
+     * Sends a HTTP 200 status code if login was successful
+     * Sends a HTTP 401 status code if details are invaild
+     * 
+     * @param context The Javalin context that contains the login details
+     * @throws JsonProcessingException Thrown if body is not expected format
+     */
     private void loginUser(Context context) throws JsonProcessingException{
         // Extract account information from request body
         ObjectMapper objM = new ObjectMapper();
@@ -76,14 +97,15 @@ public class SocialMediaController {
         Account returnedAccount = accountService.loginUser(loginDetails);
 
         if(returnedAccount != null){
+            // Details were valid, log user in
             context.json(returnedAccount);
         }
         else{
             // Invalid details were entered
             context.status(401);
         }
-
     }
+
 
     /**
      * Queries the database for all messages available.
@@ -93,10 +115,17 @@ public class SocialMediaController {
         context.json(messageService.getAllMessages());
     }
 
+
+    /**
+     * Queries the database for all messages send by this user
+     * @param context The Javalin Context object for returning the query to the site.
+     */
     private void getAllMessagesFromUser(Context context){
-        List<Message> messages = messageService.getAllMessagesFromUser(Integer.parseInt(context.pathParam("account_id")));
+        List<Message> messages = messageService.getAllMessagesFromUser(
+            Integer.parseInt(context.pathParam("account_id")));
         context.json(messages);
     }
+
 
     /**
      * Returns a message from the given ID
@@ -115,9 +144,18 @@ public class SocialMediaController {
         }
     }
 
+
     /**
      * Inserts message into database and returns the message for the user to see.
+     * 
+     * Sends a HTTP 200 status code if message was created
+     * Sends a HTTP 400 status code if message was invalid
+     * 
+     * For a message to be valid, the message_text must not be blank and must be under 255 characters and
+     * the posted_by variable must match an existing account_id.
+     * 
      * @param context The Javalin Context object for running the post request. Also returns message as string
+     * @throws JsonProcessingException Thrown if body is not in expected format
      */
     private void postCreateMessage(Context context) throws JsonProcessingException{
         ObjectMapper objM = new ObjectMapper();
@@ -131,6 +169,19 @@ public class SocialMediaController {
         }
     }
 
+
+    /**
+     * Attempts to update a message given the message_id with the body of the request
+     * 
+     * Sends a HTTP 200 status code if update was successful
+     * Sends a HTTP 400 status code if update failed
+     * 
+     * For a message to be updated, the message_id in the URL must match an existing message
+     * and the message_text in the body must not be blank and must be under 255 characters.
+     * 
+     * @param context The Javalin Context object that queries the database and returns the updated message
+     * @throws JsonProcessingException Thrown if body is not in expected format
+     */
     private void updateMessageText(Context context) throws JsonProcessingException{
         int message_id = Integer.parseInt(context.pathParam("message_id"));
 
@@ -148,6 +199,13 @@ public class SocialMediaController {
         }
     }
 
+    /**
+     * Attempts to delete a message with the message_id provided in the URL. Responds with deleted message.
+     * 
+     * Sends a HTTP 200 status code regardless of if a message is deleted for not.
+     * 
+     * @param context The Javalin Context object to retrieve the message_id and return the result of the query
+     */
     private void deleteMessageByID(Context context){
         Message message = messageService.deleteMessageByID(Integer.parseInt(context.pathParam("message_id")));
         
@@ -159,5 +217,4 @@ public class SocialMediaController {
             context.json(message);
         }
     }
-
 }

@@ -31,6 +31,14 @@ public class MessageService {
         return messageDao.insertMessage(message);
     }
 
+    public Message updateMessageText(int message_id, String newMessage){
+        return messageDao.updateMessageText(message_id, newMessage);
+    }
+
+    public Message deleteMessageByID(int message_id){
+        return messageDao.deleteMessageByID(message_id);
+    }
+
     
     
 }

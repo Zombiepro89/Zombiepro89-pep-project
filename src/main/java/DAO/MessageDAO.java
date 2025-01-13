@@ -4,7 +4,7 @@ package DAO;
 import Util.ConnectionUtil;
 import Model.Message;
 
-// Java libraries importedd
+// Java libraries imported
 import java.util.List;
 import java.util.ArrayList;
 import java.sql.Connection;
@@ -115,6 +115,51 @@ public class MessageDAO {
             if(result.next()){
                 return new Message(result.getInt("message_id"), result.getInt("posted_by"),
                 result.getString("message_text"), result.getLong("time_posted_epoch"));
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+
+        return null;
+    }
+
+    public Message updateMessageText(int message_id, String newMessage){
+        try (Connection connection = ConnectionUtil.getConnection()){
+            
+            // If the message is invalid, don't update
+            if(newMessage.length() <= 0 || newMessage.length() >= 255){
+                return null;
+            }
+            
+            String sql = "UPDATE Message SET message_text = ? WHERE message_id = ?";
+            PreparedStatement query = connection.prepareStatement(sql);
+
+            query.setString(1, newMessage);
+            query.setInt(2, message_id);
+
+            if(query.executeUpdate() > 0){
+                return getMessageByID(message_id);
+            }
+
+        } 
+        catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return null;
+    }
+
+    public Message deleteMessageByID(int message_id){
+        try(Connection connection = ConnectionUtil.getConnection()){
+            Message messageToDelete = getMessageByID(message_id);
+            
+            // If message_id were a string, this would be scary, but here it should be fine
+            String sql = "DELETE FROM Message WHERE message_id = " + message_id;
+            Statement query = connection.createStatement();
+
+            if(query.executeUpdate(sql) > 0){
+                return messageToDelete;
             }
         }
         catch(SQLException e){

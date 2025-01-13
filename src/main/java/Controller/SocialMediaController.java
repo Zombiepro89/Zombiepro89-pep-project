@@ -30,9 +30,11 @@ public class SocialMediaController {
         Javalin app = Javalin.create();
         app.get("example-endpoint", this::exampleHandler);
         app.get("messages", this::getAllMessages);
-        app.post("messages", this::postCreateMessage);
         app.get("accounts/{account_id}/messages", this::getAllMessagesFromUser);
         app.get("messages/{message_id}", this::getMessageByID);
+        app.post("messages", this::postCreateMessage);
+        app.patch("messages/{message_id}", this::updateMessageText);
+        app.delete("messages/{message_id}", this::deleteMessageByID);
 
         return app;
     }
@@ -88,6 +90,35 @@ public class SocialMediaController {
         }
         else{
             context.status(400);
+        }
+    }
+
+    private void updateMessageText(Context context) throws JsonProcessingException{
+        int message_id = Integer.parseInt(context.pathParam("message_id"));
+
+        // Extract the new message from the body into a temporary message object
+        ObjectMapper objM = new ObjectMapper();
+        Message tempMessage = objM.readValue(context.body(), Message.class);
+        
+        Message updatedMessage = messageService.updateMessageText(message_id, tempMessage.getMessage_text());
+
+        if(updatedMessage != null){
+            context.json(updatedMessage);
+        }
+        else{
+            context.status(400);
+        }
+    }
+
+    private void deleteMessageByID(Context context){
+        Message message = messageService.deleteMessageByID(Integer.parseInt(context.pathParam("message_id")));
+        
+        if(message == null){
+            // Even though we didn't get a message, everything is a-ok
+            context.status(200);
+        }
+        else{
+            context.json(message);
         }
     }
 

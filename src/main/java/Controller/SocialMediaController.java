@@ -1,8 +1,12 @@
 package Controller;
 
+// Custom Classes Imported
 import Model.Message;
+import Model.Account;
 import Service.MessageService;
+import Service.AccountService;
 
+// External Libraries
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import java.util.List;
@@ -15,9 +19,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * refer to prior mini-project labs and lecture materials for guidance on how a controller may be built.
  */
 public class SocialMediaController {
+    AccountService accountService;
     MessageService messageService;
     
     public SocialMediaController(){
+        accountService = new AccountService();
         messageService = new MessageService();
     }
 
@@ -28,7 +34,12 @@ public class SocialMediaController {
      */
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
+
+        //Account related handlers
+        app.post("register", this::registerUser);
+        app.post("login", this::loginUser);
+
+        // Message related handlers
         app.get("messages", this::getAllMessages);
         app.get("accounts/{account_id}/messages", this::getAllMessagesFromUser);
         app.get("messages/{message_id}", this::getMessageByID);
@@ -39,12 +50,39 @@ public class SocialMediaController {
         return app;
     }
 
-    /**
-     * This is an example handler for an example endpoint.
-     * @param context The Javalin Context object manages information about both the HTTP request and response.
-     */
-    private void exampleHandler(Context context) {
-        context.json("sample text");
+    private void registerUser(Context context) throws JsonProcessingException{
+        // Extract account information from request body
+        ObjectMapper objM = new ObjectMapper();
+        Account newAccount = objM.readValue(context.body(), Account.class);
+
+        // Attempt to register user in the database
+        newAccount = accountService.registerUser(newAccount);
+
+        if(newAccount != null){
+            // User has be registered, return account info
+            context.json(newAccount);
+        }
+        else{
+            // Something went wrong, send the cooresponding status code
+            context.status(400);
+        }
+    }
+
+    private void loginUser(Context context) throws JsonProcessingException{
+        // Extract account information from request body
+        ObjectMapper objM = new ObjectMapper();
+        Account loginDetails = objM.readValue(context.body(), Account.class);
+
+        Account returnedAccount = accountService.loginUser(loginDetails);
+
+        if(returnedAccount != null){
+            context.json(returnedAccount);
+        }
+        else{
+            // Invalid details were entered
+            context.status(401);
+        }
+
     }
 
     /**
@@ -99,7 +137,7 @@ public class SocialMediaController {
         // Extract the new message from the body into a temporary message object
         ObjectMapper objM = new ObjectMapper();
         Message tempMessage = objM.readValue(context.body(), Message.class);
-        
+
         Message updatedMessage = messageService.updateMessageText(message_id, tempMessage.getMessage_text());
 
         if(updatedMessage != null){
